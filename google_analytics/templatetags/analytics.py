@@ -10,6 +10,11 @@ register = template.Library()
 Analytics = models.get_model('googleanalytics', 'analytics')
 
 def do_get_analytics(parser, token):
+
+    enabled = getattr(settings, "GOOGLE_ANALYTICS_MODEL" , False)
+    if not enabled:
+        return AnalyticsNode("", "", "", False)
+
     contents = token.split_contents()
     tag_name = contents[0]
     template_name = 'google_analytics/%s_template.html' % tag_name
@@ -29,15 +34,19 @@ def do_get_analytics(parser, token):
         code = code[1:-1]
         current_site = None
 
-    return AnalyticsNode(current_site, code, template_name)
+    return AnalyticsNode(current_site, code, template_name, True)
     
 class AnalyticsNode(template.Node):
-    def __init__(self, site=None, code=None, template_name='google_analytics/analytics_template.html'):
+    def __init__(self, site=None, code=None, template_name='google_analytics/analytics_template.html', enabled = True):
+        self.enabled = enabled
         self.site = site
         self.code = code
         self.template_name = template_name
         
     def render(self, context):
+        if not self.enabled:
+            return ""
+        
         content = ''
         if self.site:
             code_set = self.site.analytics_set.all()
